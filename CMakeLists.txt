@@ -494,6 +494,9 @@ if (NOT CMAKE_CROSSCOMPILING)
 endif()
 #END tonlib
 
+add_executable(mintless mintless/generator.cpp)
+target_link_libraries(mintless tdutils tddb_utils ton_crypto_core ton_block ton_crypto smc-envelope ssl crypto)
+
 #BEGIN internal
 if (NOT TON_ONLY_TONLIB)
 add_executable(test-db test/test-td-main.cpp ${TONDB_TEST_SOURCE})
