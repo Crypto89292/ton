@@ -75,15 +75,17 @@ Result<RocksDb> RocksDb::open(std::string path, RocksDbOptions options) {
     } else {
       table_options.block_cache = options.block_cache;
     }
+    table_options.optimize_filters_for_memory = true;
+    table_options.optimize_filters_for_hits = true;
     db_options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
 
-    db_options.use_direct_reads = options.use_direct_reads;
-    db_options.manual_wal_flush = true;
+    db_options.use_direct_reads = false;
+    db_options.optimize_filters_for_hits = true;
     db_options.create_if_missing = true;
     db_options.max_background_compactions = 4;
     db_options.max_background_flushes = 2;
-    db_options.bytes_per_sync = 1 << 20;
-    db_options.writable_file_max_buffer_size = 2 << 14;
+    db_options.bytes_per_sync = 0;
+    db_options.writable_file_max_buffer_size = 0;
     db_options.statistics = options.statistics;
     db_options.max_log_file_size = 100 << 20;
     db_options.keep_log_file_num = 1;
@@ -175,6 +177,7 @@ Status RocksDb::erase(Slice key) {
 
 Result<size_t> RocksDb::count(Slice prefix) {
   rocksdb::ReadOptions options;
+  options.async_io = true;
   options.snapshot = snapshot_.get();
   std::unique_ptr<rocksdb::Iterator> iterator;
   if (snapshot_ || !transaction_) {
@@ -198,6 +201,7 @@ Result<size_t> RocksDb::count(Slice prefix) {
 
 Status RocksDb::for_each(std::function<Status(Slice, Slice)> f) {
   rocksdb::ReadOptions options;
+  options.async_io = true;
   options.snapshot = snapshot_.get();
   std::unique_ptr<rocksdb::Iterator> iterator;
   if (snapshot_ || !transaction_) {
@@ -253,7 +257,7 @@ Status RocksDb::begin_write_batch() {
 Status RocksDb::begin_transaction() {
   CHECK(!write_batch_);
   rocksdb::WriteOptions options;
-  options.sync = true;
+  options.sync = false;
   transaction_.reset(db_->BeginTransaction(options, {}));
   return Status::OK();
 }
@@ -262,7 +266,7 @@ Status RocksDb::commit_write_batch() {
   CHECK(write_batch_);
   auto write_batch = std::move(write_batch_);
   rocksdb::WriteOptions options;
-  options.sync = true;
+  options.sync = false;
   return from_rocksdb(db_->Write(options, write_batch.get()));
 }
 
