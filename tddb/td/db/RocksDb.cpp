@@ -76,7 +76,6 @@ Result<RocksDb> RocksDb::open(std::string path, RocksDbOptions options) {
       table_options.block_cache = options.block_cache;
     }
     table_options.optimize_filters_for_memory = true;
-    table_options.optimize_filters_for_hits = true;
     db_options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
 
     db_options.use_direct_reads = false;
